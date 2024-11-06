@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Message App</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0">Message App</h2>
+            </div>
+            <div class="card-body">
+                <form id="fetchForm">
+                    <div class="form-group">
+                        <label for="customerNumber">Customer Number:</label>
+                        <input id="customerNumber" type="text" class="form-control" name="customerNumber" placeholder="Enter customer number" required>
+                    </div>
+                    <button type="submit" class="btn btn-success mt-3">Fetch Messages</button>
+                </form>
+                <div id="alert" class="alert mt-3" style="display: none;"></div>
+                <ul id="messagesList" class="list-group mt-3"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('fetchForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const customerNumber = document.getElementById('customerNumber').value;
+            fetch('/fetch_messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `customerNumber=${customerNumber}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                const alert = document.getElementById('alert');
+                const messagesList = document.getElementById('messagesList');
+                messagesList.innerHTML = '';
+                if (data.success) {
+                    data.messages.forEach(message => {
+                        const li = document.createElement('li');
+                        li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+                        li.textContent = message.result.offer;
+
+                        const button = document.createElement('button');
+                        button.classList.add('btn', 'btn-primary', 'btn-sm');
+                        button.textContent = 'Accept';
+                        button.onclick = () => acceptMessage(message.result.uuid, message.result.offer_name);
+                        li.appendChild(button);
+                        messagesList.appendChild(li);
+                    });
+                    alert.style.display = 'none';
+                } else {
+                    alert.textContent = data.error;
+                    alert.classList.add('alert-danger');
+                    alert.style.display = 'block';
+                }
+            });
+        });
+
+        function acceptMessage(uuid, offerName) {
+            fetch('/accept_message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ uuid, offerName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const alert = document.getElementById('alert');
+                if (data.success) {
+                    alert.textContent = 'Message accepted successfully';
+                    alert.classList.remove('alert-danger');
+                    alert.classList.add('alert-success');
+                } else {
+                    alert.textContent = data.error;
+                    alert.classList.remove('alert-success');
+                    alert.classList.add('alert-danger');
+                }
+                alert.style.display = 'block';
+            });
+        }
+    </script>
+</body>
+</html>
